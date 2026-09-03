@@ -138,8 +138,9 @@ let testLine = "2026/08/20 18:07:48 123793201 3b9 [INFO Client 8412] : Tricky ha
 
 
 let split (line: string) = 
-    let splitIndex = line.IndexOf(']') + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
-    if splitIndex <> -1 then
+    let rightBracketIndex = line.IndexOf(']')
+    if rightBracketIndex <> -1 then
+        let splitIndex = rightBracketIndex + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
         let left = line.Substring(0, splitIndex)
         let right = line.Substring(splitIndex)
         Some { Common=left; Unique=right }
