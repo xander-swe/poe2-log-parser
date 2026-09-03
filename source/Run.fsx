@@ -1,3 +1,179 @@
 #r "LogParser/bin/Debug/net10.0/LogParser.dll"
 
-LogParser.Say.hello "World"
+open System.Text.RegularExpressions
+open System
+
+//**************************************************************************************************************
+// LOGS
+//**************************************************************************************************************
+
+let logText = """2026/08/20 18:02:11 123456123 1a2 [INFO Client 8412] ***** LOG FILE OPENING *****
+2026/08/20 18:02:11 123456145 1a3 [INFO Client 8412] Build: 2.1.0.4 (x64)
+2026/08/20 18:02:11 123456201 1a4 [INFO Client 8412] Started with PID 8412
+2026/08/20 18:02:12 123457002 1b0 [INFO Client 8412] Async connecting to 12.34.56.78:20481
+2026/08/20 18:02:12 123457340 1b1 [INFO Client 8412] Connecting to instance server at 12.34.56.78:6112
+2026/08/20 18:02:13 123458110 1c9 [INFO Client 8412] Tricky (Warrior) is now level 1
+2026/08/20 18:02:14 123458900 1d0 [INFO Client 8412] [SCENE] Set Source [Clearfell Encampment]
+2026/08/20 18:02:14 123459005 1d1 [INFO Client 8412] Generating level 1 area "G1_town" with seed 1928374651
+2026/08/20 18:04:02 123566880 2a0 [INFO Client 8412] [SCENE] Set Source [The Riverbank]
+2026/08/20 18:04:02 123566912 2a1 [INFO Client 8412] Generating level 2 area "G1_1" with seed 837465102
+2026/08/20 18:07:45 123790110 3b7 [INFO Client 8412] : Tricky has been slain.
+2026/08/20 18:07:48 123793201 3b9 [INFO Client 8412] : Tricky has been slain by Rustic Sentry.
+2026/08/20 18:09:20 123885330 3f2 [INFO Client 8412] : Tricky (Warrior) is now level 2
+2026/08/20 18:12:10 124055440 410 [INFO Client 8412] @From Xyrella_HC: Hi, I'd like to buy your 1x Chaos Orb for my 3x Orb of Alchemy in Standard
+2026/08/20 18:12:44 124089200 415 [INFO Client 8412] @To Xyrella_HC: sure, meet me at hideout
+2026/08/20 18:13:02 124107001 41a [INFO Client 8412] Xyrella_HC has joined the area.
+2026/08/20 18:14:55 124220050 44c [INFO Client 8412] Xyrella_HC has left the area.
+2026/08/20 18:15:10 124235100 452 [INFO Client 8412] #Tricky: anyone want to duo the Trial of Chaos?
+2026/08/20 18:15:33 124258700 459 [INFO Client 8412] %Grouper99: invite sent
+2026/08/20 18:15:40 124265900 45c [INFO Client 8412] &LeagueGuild: gg on the boss kill everyone
+2026/08/20 18:16:02 124288100 461 [INFO Client 8412] $Trader_Joe: WTS Headhunter 45ex or best offer
+2026/08/20 18:16:10 124296300 463 [INFO Client 8412] Grouper99 has joined the area.
+2026/08/20 18:18:00 124406100 4a1 [INFO Client 8412] [SCENE] Set Source [The Mud Flats]
+2026/08/20 18:18:00 124406132 4a2 [INFO Client 8412] Generating level 4 area "G1_2" with seed 293847561
+2026/08/20 18:22:15 124661400 500 [INFO Client 8412] : Tricky has been slain by Kabala, Constrictor Queen.
+2026/08/20 18:22:16 124662001 501 [INFO Client 8412] : Grouper99 has been slain by Kabala, Constrictor Queen.
+2026/08/20 18:25:00 124826000 540 [INFO Client 8412] : Tricky (Warrior) is now level 5
+2026/08/20 18:30:44 125150200 5a2 [INFO Client 8412] Connecting to instance server at 12.34.56.78:6112
+2026/08/20 18:30:45 125151100 5a3 [INFO Client 8412] [SCENE] Set Source [Ogham Farmlands]
+2026/08/20 18:30:45 125151140 5a4 [INFO Client 8412] Generating level 6 area "G2_1" with seed 918273645
+2026/08/20 18:34:12 125358900 5f0 [INFO Client 8412] Lost connection: Connection lost with game server. (Timeout)
+2026/08/20 18:34:13 125359700 5f1 [INFO Client 8412] [DEBUG Client 8412] Reconnecting...
+2026/08/20 18:34:20 125366900 5f5 [INFO Client 8412] Connecting to instance server at 12.34.56.78:6112
+2026/08/20 18:34:21 125367800 5f6 [INFO Client 8412] [SCENE] Set Source [Ogham Farmlands]
+2026/08/20 18:40:03 125709000 640 [INFO Client 8412] : Tricky has completed Trial of the Sekhemas
+2026/08/20 18:42:19 125844100 660 [INFO Client 8412] @From Vendor_Bot: Thanks for the trade!
+2026/08/20 18:45:00 126005000 690 [INFO Client 8412] Chat away team joined.
+2026/08/20 18:45:02 126006900 691 [INFO Client 8412] %Tricky: ready
+2026/08/20 18:48:33 126218100 6c1 [INFO Client 8412] [SCENE] Set Source [The Halani Gates]
+2026/08/20 18:48:33 126218144 6c2 [INFO Client 8412] Generating level 8 area "G2_town" with seed 564738291
+2026/08/20 18:51:19 126384000 700 [INFO Client 8412] : Tricky (Warrior) is now level 8
+2026/08/20 18:55:00 126605000 740 [INFO Client 8412] : Grouper99 has left the game.
+2026/08/20 19:01:12 126977000 7a0 [INFO Client 8412] : Tricky has been slain by Count Geonor.
+2026/08/20 19:01:12 126977040 7a1 [INFO Client 8412] : Tricky has been slain by Count Geonor.
+2026/08/20 19:01:13 126978100 7a2 [INFO Client 8412] : Tricky has been slain by Count Geonor.
+2026/08/20 19:05:00 127217000 800 [INFO Client 8412] [SCENE] Set Source [Freythorn]
+2026/08/20 19:05:00 127217033 801 [INFO Client 8412] Generating level 9 area "G2_2" with seed 102938475
+2026/08/20 19:10:44 127542100 850 [INFO Client 8412] $CurrencySeller: buying all fragments, add me
+2026/08/20 19:12:00 127618000 860 [INFO Client 8412] Async connecting to 12.34.56.78:20481
+2026/08/20 19:12:00 127618100 861 [INFO Client 8412] ***** LOG FILE OPENING *****
+"""
+
+let altLogText = """2025/12/24 04:58:30 100000 abc [INFO Client 12345] ***** LOG FILE OPENING *****
+2025/12/24 04:58:45 123456 abc [INFO Client 12345] [SCENE] Set Source [The Mud Flats]
+2025/12/24 04:58:45 123456 abc [INFO Client 12345] Connecting to instance server at 123.45.67.89:6112
+2025/12/24 05:15:33 123456 abc [INFO Client 12345] : MyCharacter (Sorceress) is now level 22
+2025/12/24 05:22:41 123456 abc [INFO Client 12345] : MyCharacter has been slain.
+"""
+
+//**************************************************************************************************************
+// TYPES
+//**************************************************************************************************************
+
+type TimeStamp = {
+    Date : DateOnly
+    Time : TimeOnly
+}
+
+type LogOpen = {
+    TimeStamp : TimeStamp
+}
+
+type LevelUp = {
+    TimeStamp : TimeStamp
+    CharacterName : string
+    Level : int
+}
+
+type Death = {
+    TimeStamp : TimeStamp
+    Killed : string
+    Killer : string option
+}
+
+type SceneChange = {
+    TimeStamp : TimeStamp
+    SceneName : string
+}
+
+type LogEvent =
+    | LogOpen
+    | LevelUp
+    | Death
+    | SceneChange
+
+type Line = {
+    Common : string
+    Unique : string
+}
+
+//**************************************************************************************************************
+// FUNCTIONS
+//**************************************************************************************************************
+
+// Some guidelines:
+// 1. Make sure that we are examining the pattern from the start of the line using the '^' symbol. That way if 
+//    chat messages contain key patterns, the parser doesn't read the comment as a different type of log line.
+// 2. 
+
+// split -> extractTimeStamp -> fitToEventType
+
+//[<Literal>]
+//let dateStampRegex = @"[0-9]{4}/[0-9]{2}/[0-9]{2}"
+
+[<Literal>]
+let dateAndTimeReges = @"([0-9]{4}/[0-9]{2}/[0-9]{2}) ([0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
+
+//[<Literal>]
+//let characterSlainNameRegex = @"(?<=^: ).*?(?= has been slain)"
+//
+//[<Literal>]
+//let characterSlainKillerNameRegex = @"(?<= by).*?(?=\.)" // use this once we know we are looking at a character slain line.
+
+[<Literal>]
+let deathRegex = @"^: (.*)has been slain(?: by )?(.*)." // first capture group is killed, second is killer. Second may not exist.
+
+
+let testLine = "2026/08/20 18:07:48 123793201 3b9 [INFO Client 8412] : Tricky has been slain by Rustic Sentry."
+
+
+let split (line: string) = 
+    let splitIndex = line.IndexOf(']') + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
+    if splitIndex <> -1 then
+        let left = line.Substring(0, splitIndex)
+        let right = line.Substring(splitIndex)
+        Some { Common=left; Unique=right }
+    else
+        None
+        
+let extractTimeStamp (line: Line) =
+    let m = Regex.Match(line.Unique, dateAndTimeReges)
+
+    if (m.Success && m.Groups.Count < 2) then
+        Error "Failed to find both date and time stamps."
+    
+    let dateStr = m.Groups[0].Value
+    let timeStr = m.Groups[1].Value
+    let dateSuccess, date = DateOnly.TryParse(dateStr)
+    let timeSuccess, time = TimeOnly.TryParse(timeStr)
+    
+    if (not dateSuccess || not timeSuccess) then
+        Error $"Failed to parse date: {dateSuccess}. Failed to parse time: {timeSuccess}"
+    
+    Ok { Date=date; Time=time }
+
+let (|Death|_|) (line: Line) = 
+    let m = Regex.Match(line.Unique, deathRegex)
+    if (m.Success) then
+        Some m.Groups[0].Value
+    else
+        None
+
+let parse (line: Line) =
+    match line with
+    | Death parsed -> 
+        Some 1
+    | _ -> None
+    
+split testLine |> Option.map parse |> printfn "%A"
+//split testLine |> Option.map |> fun line -> (extractTimeStamp line.Common, parse line.Unique)
