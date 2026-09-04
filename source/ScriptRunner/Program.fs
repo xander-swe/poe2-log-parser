@@ -1,7 +1,4 @@
-#r "LogParser/bin/Debug/net10.0/LogParser.dll"
-
-open System.Text.RegularExpressions
-open System
+﻿open LogParser.Parser
 
 //**************************************************************************************************************
 // LOGS
@@ -66,115 +63,12 @@ let altLogText = """2025/12/24 04:58:30 100000 abc [INFO Client 12345] ***** LOG
 2025/12/24 05:22:41 123456 abc [INFO Client 12345] : MyCharacter has been slain.
 """
 
-//**************************************************************************************************************
-// TYPES
-//**************************************************************************************************************
-
-type TimeStamp = {
-    Date : DateOnly
-    Time : TimeOnly
-}
-
-type LogOpen = {
-    TimeStamp : TimeStamp
-}
-
-type LevelUp = {
-    TimeStamp : TimeStamp
-    CharacterName : string
-    Level : int
-}
-
-type Death = {
-    TimeStamp : TimeStamp
-    Killed : string
-    Killer : string option
-}
-
-type SceneChange = {
-    TimeStamp : TimeStamp
-    SceneName : string
-}
-
-type LogEvent =
-    | LogOpen
-    | LevelUp
-    | Death
-    | SceneChange
-
-type Line = {
-    Common : string
-    Unique : string
-}
-
-//**************************************************************************************************************
-// FUNCTIONS
-//**************************************************************************************************************
-
-// Some guidelines:
-// 1. Make sure that we are examining the pattern from the start of the line using the '^' symbol. That way if 
-//    chat messages contain key patterns, the parser doesn't read the comment as a different type of log line.
-// 2. 
-
-// split -> extractTimeStamp -> fitToEventType
-
-//[<Literal>]
-//let dateStampRegex = @"[0-9]{4}/[0-9]{2}/[0-9]{2}"
-
-[<Literal>]
-let dateAndTimeReges = @"([0-9]{4}/[0-9]{2}/[0-9]{2}) ([0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
-
-//[<Literal>]
-//let characterSlainNameRegex = @"(?<=^: ).*?(?= has been slain)"
-//
-//[<Literal>]
-//let characterSlainKillerNameRegex = @"(?<= by).*?(?=\.)" // use this once we know we are looking at a character slain line.
-
-[<Literal>]
-let deathRegex = @"^: (.*)has been slain(?: by )?(.*)." // first capture group is killed, second is killer. Second may not exist.
-
-
 let testLine = "2026/08/20 18:07:48 123793201 3b9 [INFO Client 8412] : Tricky has been slain by Rustic Sentry."
 
-
-let split (line: string) = 
-    let rightBracketIndex = line.IndexOf(']')
-    if rightBracketIndex <> -1 then
-        let splitIndex = rightBracketIndex + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
-        let left = line.Substring(0, splitIndex)
-        let right = line.Substring(splitIndex)
-        Some { Common=left; Unique=right }
-    else
-        None
-        
-let extractTimeStamp (line: Line) =
-    let m = Regex.Match(line.Unique, dateAndTimeReges)
-
-    if (m.Success && m.Groups.Count < 2) then
-        Error "Failed to find both date and time stamps."
     
-    let dateStr = m.Groups[0].Value
-    let timeStr = m.Groups[1].Value
-    let dateSuccess, date = DateOnly.TryParse(dateStr)
-    let timeSuccess, time = TimeOnly.TryParse(timeStr)
-    
-    if (not dateSuccess || not timeSuccess) then
-        Error $"Failed to parse date: {dateSuccess}. Failed to parse time: {timeSuccess}"
-    
-    Ok { Date=date; Time=time }
-
-let (|Death|_|) (line: Line) = 
-    let m = Regex.Match(line.Unique, deathRegex)
-    if (m.Success) then
-        Some m.Groups[0].Value
-    else
-        None
-
-let parse (line: Line) =
-    match line with
-    | Death parsed -> 
-        Some 1
-    | _ -> None
-    
-split testLine |> Option.map parse |> printfn "%A"
+// parse
+// split -> extractTimeStamp -> match to event type 
+// string -> LogLine -> TimeStamp -> LogEvent
+//split testLine |> Option.map parse |> printfn "%A"
 //split testLine |> Option.map |> fun line -> (extractTimeStamp line.Common, parse line.Unique)
+split testLine |> Option.map extractTimeStamp |> printfn "%A"
