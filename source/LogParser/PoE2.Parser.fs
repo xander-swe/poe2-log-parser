@@ -9,25 +9,21 @@ open PoE2.LogParser.IntermdiateTypes
 open PoE2.LogParser.Errors
 
 module Parser =
-    // Some guidelines:
-    // 1. Make sure that we are examining the pattern from the start of the line using the '^' symbol. That way if 
-    //    chat messages contain key patterns, the parser doesn't read the comment as a different type of log line.
-    // 2. 
 
     [<Literal>]
     let dateAndTimeRegex = @"^(?<date>[0-9]{4}/[0-9]{2}/[0-9]{2}) (?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
 
     [<Literal>]
-    let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\.$" // first capture group is killed, second is killer. Second may not exist.
+    let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\." // first capture group is killed, second is killer. Second may not exist.
 
     [<Literal>]
-    let sceneChangeRegex = @"^\[SCENE\] Set Source \[(?<sceneName>.+?)\]$"
+    let sceneChangeRegex = @"^\[SCENE\] Set Source \[(?<sceneName>.+?)\]"
 
     [<Literal>]
-    let levelUpRegex= @"^: (?<characterName>.+?) \((?<class>.+?)\) is now level (?<level>.+?)$"
+    let levelUpRegex= @"^: (?<characterName>.+?) \((?<class>.+?)\) is now level (?<level>.+?)"
 
     [<Literal>]
-    let logOpenRegex = @"^(?<open>\*\*\*\*\* LOG FILE OPENING \*\*\*\*\*)$"
+    let logOpenRegex = @"^(?<open>\*\*\*\*\* LOG FILE OPENING \*\*\*\*\*)"
 
     let toLogLine (line: string) = 
         let rightBracketIndex = line.IndexOf(']')
@@ -35,7 +31,7 @@ module Parser =
         if rightBracketIndex = -1 then
             Error (InvalidLogLine line)
         else
-            let splitIndex = rightBracketIndex + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
+            let splitIndex = rightBracketIndex + 2  // Index of first closing square bracket. Plus 1 to include the bracket in the left result. Plus 1 more to include the following whitespace in the left result.
             let left = line.Substring(0, splitIndex)
             let right = line.Substring(splitIndex)
             Ok { Header=left; Message=right }
