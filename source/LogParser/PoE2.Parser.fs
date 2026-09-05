@@ -25,27 +25,6 @@ module Parser =
     [<Literal>]
     let logOpenRegex = @"^(?<open>\*\*\*\*\* LOG FILE OPENING \*\*\*\*\*)"
 
-    let toLogLine (line: string) = 
-        let rightBracketIndex = line.IndexOf(']')
-
-        if rightBracketIndex = -1 then
-            Error (InvalidLogLine line)
-        else
-            let splitIndex = rightBracketIndex + 2  // Index of first closing square bracket. Plus 1 to include the bracket in the left result. Plus 1 more to include the following whitespace in the left result.
-            let left = line.Substring(0, splitIndex)
-            let right = line.Substring(splitIndex)
-            Ok { Header=left; Message=right }
-            
-    let parseHeader (line: LogLine) =
-        let m = Regex.Match(line.Header, dateAndTimeRegex)
-        let date = GroupParser.parseGroup m.Groups["date"] ValueParser.dateOnly
-        let time = GroupParser.parseGroup m.Groups["time"] ValueParser.timeOnly
-
-        match date, time with
-        | Some date, Some time -> Ok { TimeStamp={ Date=date; Time=time }; Message=line.Message }
-        | None, _ -> Error (InvalidDate m.Groups["date"].Value)
-        | _, None -> Error (InvalidTime m.Groups["time"].Value)
-
     let (|Death|_|) (line: LogLineHeaderParsed) = 
         let m = Regex.Match(line.Message, deathRegex)
         
@@ -99,6 +78,27 @@ module Parser =
         | LevelUp event -> Some (LogEvent.LevelUp event)
         | LogOpen event -> Some (LogEvent.LogOpen event)
         | _ -> None
+            
+    let parseHeader (line: LogLine) =
+        let m = Regex.Match(line.Header, dateAndTimeRegex)
+        let date = GroupParser.parseGroup m.Groups["date"] ValueParser.dateOnly
+        let time = GroupParser.parseGroup m.Groups["time"] ValueParser.timeOnly
+
+        match date, time with
+        | Some date, Some time -> Ok { TimeStamp={ Date=date; Time=time }; Message=line.Message }
+        | None, _ -> Error (InvalidDate m.Groups["date"].Value)
+        | _, None -> Error (InvalidTime m.Groups["time"].Value)
+
+    let toLogLine (line: string) = 
+        let rightBracketIndex = line.IndexOf(']')
+
+        if rightBracketIndex = -1 then
+            Error (InvalidLogLine line)
+        else
+            let splitIndex = rightBracketIndex + 2  // Index of first closing square bracket. Plus 1 to include the bracket in the left result. Plus 1 more to include the following whitespace in the left result.
+            let left = line.Substring(0, splitIndex)
+            let right = line.Substring(splitIndex)
+            Ok { Header=left; Message=right }
 
     let Parse (line: string) : Result<LogEvent option,ParserError> =
         toLogLine line
