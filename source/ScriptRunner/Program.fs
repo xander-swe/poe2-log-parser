@@ -71,4 +71,4 @@ let testLine = "2026/08/20 18:07:48 123793201 3b9 [INFO Client 8412] : Tricky ha
 // string -> LogLine -> TimeStamp -> LogEvent
 //split testLine |> Option.map parse |> printfn "%A"
 //split testLine |> Option.map |> fun line -> (extractTimeStamp line.Common, parse line.Unique)
-split testLine |> Option.map extractTimeStamp |> printfn "%A"
+//toLogLine testLine |> Option.map parseHeader |> printfn "%A"

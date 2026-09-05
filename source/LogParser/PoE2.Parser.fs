@@ -14,58 +14,68 @@ module Parser =
     //    chat messages contain key patterns, the parser doesn't read the comment as a different type of log line.
     // 2. 
 
-    // split -> extractTimeStamp -> fitToEventType
-
-    //[<Literal>]
-    //let dateStampRegex = @"[0-9]{4}/[0-9]{2}/[0-9]{2}"
+    [<Literal>]
+    let dateAndTimeRegex = @"^(?<date>[0-9]{4}/[0-9]{2}/[0-9]{2}) (?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
 
     [<Literal>]
-    let dateAndTimeRegex = @"([0-9]{4}/[0-9]{2}/[0-9]{2}) ([0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
+    let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\.$" // first capture group is killed, second is killer. Second may not exist.
 
-    //[<Literal>]
-    //let characterSlainNameRegex = @"(?<=^: ).*?(?= has been slain)"
-    //
-    //[<Literal>]
-    //let characterSlainKillerNameRegex = @"(?<= by).*?(?=\.)" // use this once we know we are looking at a character slain line.
-
-    [<Literal>]
-    let deathRegex = @"^: (.*)has been slain(?: by )?(.*)." // first capture group is killed, second is killer. Second may not exist.
-
-    let split (line: string) = 
+    let toLogLine (line: string) = 
         let rightBracketIndex = line.IndexOf(']')
-        if rightBracketIndex <> -1 then
+
+        if rightBracketIndex = -1 then
+            Error (InvalidLogLine line)
+        else
             let splitIndex = rightBracketIndex + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
             let left = line.Substring(0, splitIndex)
             let right = line.Substring(splitIndex)
-            Some { Header=left; Message=right }
-        else
-            None
+            Ok { Header=left; Message=right }
             
-    let extractTimeStamp (line: LogLine) =
+    let parseHeader (line: LogLine) =
         let m = Regex.Match(line.Header, dateAndTimeRegex)
+        let dateGroup = m.Groups["date"]
+        let timeGroup = m.Groups["time"]
         
-        if (not m.Success || m.Groups.Count < 3) then
+        if not m.Success || not dateGroup.Success || not timeGroup.Success then
             Error MissingTimestamp
         else
-            let dateStr = m.Groups[1].Value
-            let timeStr = m.Groups[2].Value
+            let dateStr = dateGroup.Value
+            let timeStr = timeGroup.Value
             let dateOk, date = DateOnly.TryParse(dateStr)
             let timeOk, time = TimeOnly.TryParse(timeStr)
 
             match dateOk, timeOk with
-            | true, true -> Ok { Date=date; Time=time }
+            | true, true -> Ok { TimeStamp={ Date=date; Time=time }; Message=line.Message }
             | false, _ -> Error (InvalidDate dateStr)
             | _, false -> Error (InvalidTime timeStr)
 
-    let (|Death|_|) (line: LogLine) = 
+    let (|Death|_|) (line: LogLineHeaderParsed) = 
         let m = Regex.Match(line.Message, deathRegex)
-        if (m.Success) then
-            Some m.Groups[0].Value
+        
+        let victimGroup = m.Groups["victim"]
+        let killerGroup = m.Groups["killer"]
+
+        if m.Success && victimGroup.Success then
+            let victim = m.Groups[1].Value
+            let killer = 
+                if killerGroup.Success then
+                    Some killerGroup.Value
+                else
+                    None
+
+            Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=killer }
         else
             None
 
-    let parse (line: LogLine) =
+    let parseMessage (line: LogLineHeaderParsed) : LogEvent option =
         match line with
-        | Death parsed -> 
-            Some 1
+        // | SceneChange result -> Some (LogEvent.SceneChange result)
+        | Death result -> Some (LogEvent.Death result)
+        // | LevelUp result -> Some (LogEvent.LevelUp result)
+        // | LogOpen result -> Some (LogEvent.LogOpen result)
         | _ -> None
+
+    let Parse (line: string) : Result<LogEvent option,ParserError> =
+        toLogLine line
+        |> Result.bind parseHeader
+        |> Result.map parseMessage

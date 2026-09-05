@@ -31,10 +31,10 @@ module OutputTypes =
     }
 
     type LogEvent =
-        | LogOpen
-        | LevelUp
-        | Death
-        | SceneChange
+        | LogOpen of LogOpen
+        | LevelUp of LevelUp
+        | Death of Death
+        | SceneChange of SceneChange
 
 
 module InputTypes =
