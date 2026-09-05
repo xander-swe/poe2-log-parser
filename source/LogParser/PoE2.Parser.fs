@@ -42,57 +42,40 @@ module Parser =
             
     let parseHeader (line: LogLine) =
         let m = Regex.Match(line.Header, dateAndTimeRegex)
-        let dateGroup = m.Groups["date"]
-        let timeGroup = m.Groups["time"]
-        
-        if not m.Success || not dateGroup.Success || not timeGroup.Success then
-            Error MissingTimestamp
-        else
-            let dateStr = dateGroup.Value
-            let timeStr = timeGroup.Value
-            let dateOk, date = DateOnly.TryParse(dateStr)
-            let timeOk, time = TimeOnly.TryParse(timeStr)
+        let date = GroupParser.parseGroup m.Groups["date"] ValueParser.dateOnly
+        let time = GroupParser.parseGroup m.Groups["time"] ValueParser.timeOnly
 
-            match dateOk, timeOk with
-            | true, true -> Ok { TimeStamp={ Date=date; Time=time }; Message=line.Message }
-            | false, _ -> Error (InvalidDate dateStr)
-            | _, false -> Error (InvalidTime timeStr)
+        match date, time with
+        | Some date, Some time -> Ok { TimeStamp={ Date=date; Time=time }; Message=line.Message }
+        | None, _ -> Error (InvalidDate m.Groups["date"].Value)
+        | _, None -> Error (InvalidTime m.Groups["time"].Value)
 
     let (|Death|_|) (line: LogLineHeaderParsed) = 
         let m = Regex.Match(line.Message, deathRegex)
         
-        let victimGroup = m.Groups["victim"]
-        let killerGroup = m.Groups["killer"]
+        let victim = GroupParser.parseGroup m.Groups["victim"] ValueParser.string
+        let killer = GroupParser.parseGroup m.Groups["killer"] ValueParser.string
 
-        if m.Success && victimGroup.Success then
-            let victim = m.Groups[1].Value
-            let killer = 
-                if killerGroup.Success then
-                    Some killerGroup.Value
-                else
-                    None
-
-            Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=killer }
-        else
-            None
+        match victim, killer with
+        | Some victim, Some killer -> Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=Some killer }
+        | Some victim, None -> Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=None }
+        | _, _ -> None
 
     let (|SceneChange|_|) (line: LogLineHeaderParsed) =
         let m = Regex.Match(line.Message, sceneChangeRegex)
 
-        let sceneNameGroup = m.Groups["sceneName"]
+        let sceneName = GroupParser.parseGroup m.Groups["sceneName"] ValueParser.string
 
-        if m.Success && sceneNameGroup.Success then
-            let sceneName = sceneNameGroup.Value
-            Some { TimeStamp=line.TimeStamp; SceneName=sceneName }
-        else
-            None
+        match sceneName with
+        | Some sceneName -> Some { TimeStamp=line.TimeStamp; SceneName=sceneName }
+        | None -> None
 
     let (|LevelUp|_|) (line: LogLineHeaderParsed) =
         let m = Regex.Match(line.Message, levelUpRegex)
 
-        let characterName = ValueParser.parseGroup m.Groups["characterName"] ValueParser.string
-        let class' = ValueParser.parseGroup m.Groups["class"] ValueParser.string
-        let level = ValueParser.parseGroup m.Groups["level"] ValueParser.int
+        let characterName = GroupParser.parseGroup m.Groups["characterName"] ValueParser.string
+        let class' = GroupParser.parseGroup m.Groups["class"] ValueParser.string
+        let level = GroupParser.parseGroup m.Groups["level"] ValueParser.int
 
         match characterName, class', level with
         | Some character, Some class', Some level -> 
@@ -107,7 +90,7 @@ module Parser =
     let (|LogOpen|_|) (line: LogLineHeaderParsed) =
         let m = Regex.Match(line.Message, logOpenRegex)
 
-        let open' = ValueParser.parseGroup m.Groups["open"] ValueParser.string
+        let open' = GroupParser.parseGroup m.Groups["open"] ValueParser.string
 
         match open' with
         | Some open' -> Some { TimeStamp=line.TimeStamp; }

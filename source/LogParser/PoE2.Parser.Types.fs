@@ -37,14 +37,12 @@ module OutputTypes =
         | Death of Death
         | SceneChange of SceneChange
 
-
 module InputTypes =
 
     type LogLine = {
         Header : string
         Message : string
     }
-
 
 module IntermdiateTypes =
 
@@ -53,11 +51,9 @@ module IntermdiateTypes =
         Message : string
     }
 
-
 module Errors =
 
     type ParserError =
-    | MissingTimestamp
     | InvalidDate of string
     | InvalidTime of string
     | InvalidLogLine of string

@@ -7,11 +7,6 @@ module ValueParser =
 
     type StringParser<'a> = string -> 'a option
 
-    let parseGroup (group: Group) (tryParse: StringParser<'a>) : 'a option =
-        match group.Success with
-        | true -> tryParse group.Value
-        | false -> None
-
     let string (s: string) = Some s
 
     let int (s: string) =
@@ -28,3 +23,10 @@ module ValueParser =
         match System.TimeOnly.TryParse s with
         | true, value -> Some value
         | false, _ -> None
+
+module GroupParser =
+
+    let parseGroup (group: Group) (tryParse: ValueParser.StringParser<'a>) : 'a option =
+        match group.Success with
+        | true -> tryParse group.Value
+        | false -> None
