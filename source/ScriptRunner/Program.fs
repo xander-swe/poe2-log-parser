@@ -2,9 +2,9 @@
 open System.IO
 
 let path = Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "test_data", "Client.txt")
-let clientPath = Path.GetFullPath(path)
+let fullPath = Path.GetFullPath(path)
 
-for line in File.ReadLines clientPath do
+for line in File.ReadLines fullPath do
     let parsed  = Parse line
     match parsed with
     | Ok (Some value) -> printf "%A\n" value
