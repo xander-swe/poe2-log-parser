@@ -20,6 +20,15 @@ module Parser =
     [<Literal>]
     let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\.$" // first capture group is killed, second is killer. Second may not exist.
 
+    [<Literal>]
+    let sceneChangeRegex = @"^\[SCENE\] Set Source \[(?<sceneName>.+?)\]$"
+
+    [<Literal>]
+    let levelUpRegex= @"^: (?<characterName>.+?) \((?<class>.+?)\) is now level (?<level>.+?)$"
+
+    [<Literal>]
+    let logOpenRegex = @"^(?<open>\*\*\*\*\* LOG FILE OPENING \*\*\*\*\*)$"
+
     let toLogLine (line: string) = 
         let rightBracketIndex = line.IndexOf(']')
 
@@ -67,12 +76,49 @@ module Parser =
         else
             None
 
+    let (|SceneChange|_|) (line: LogLineHeaderParsed) =
+        let m = Regex.Match(line.Message, sceneChangeRegex)
+
+        let sceneNameGroup = m.Groups["sceneName"]
+
+        if m.Success && sceneNameGroup.Success then
+            let sceneName = sceneNameGroup.Value
+            Some { TimeStamp=line.TimeStamp; SceneName=sceneName }
+        else
+            None
+
+    let (|LevelUp|_|) (line: LogLineHeaderParsed) =
+        let m = Regex.Match(line.Message, levelUpRegex)
+
+        let characterName = ValueParser.parseGroup m.Groups["characterName"] ValueParser.string
+        let class' = ValueParser.parseGroup m.Groups["class"] ValueParser.string
+        let level = ValueParser.parseGroup m.Groups["level"] ValueParser.int
+
+        match characterName, class', level with
+        | Some character, Some class', Some level -> 
+            Some { 
+                TimeStamp=line.TimeStamp
+                CharacterName=character
+                Level=level 
+                Class=class' 
+            }
+        | _, _, _ -> None
+        
+    let (|LogOpen|_|) (line: LogLineHeaderParsed) =
+        let m = Regex.Match(line.Message, logOpenRegex)
+
+        let open' = ValueParser.parseGroup m.Groups["open"] ValueParser.string
+
+        match open' with
+        | Some open' -> Some { TimeStamp=line.TimeStamp; }
+        | None -> None
+
     let parseMessage (line: LogLineHeaderParsed) : LogEvent option =
         match line with
-        // | SceneChange result -> Some (LogEvent.SceneChange result)
-        | Death result -> Some (LogEvent.Death result)
-        // | LevelUp result -> Some (LogEvent.LevelUp result)
-        // | LogOpen result -> Some (LogEvent.LogOpen result)
+        | SceneChange event -> Some (LogEvent.SceneChange event)
+        | Death event -> Some (LogEvent.Death event)
+        | LevelUp event -> Some (LogEvent.LevelUp event)
+        | LogOpen event -> Some (LogEvent.LogOpen event)
         | _ -> None
 
     let Parse (line: string) : Result<LogEvent option,ParserError> =

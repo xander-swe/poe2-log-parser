@@ -17,6 +17,7 @@ module OutputTypes =
         TimeStamp : TimeStamp
         CharacterName : string
         Level : int
+        Class : string
     }
 
     type Death = {
