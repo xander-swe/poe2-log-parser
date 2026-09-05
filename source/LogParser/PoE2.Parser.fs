@@ -1,6 +1,5 @@
 ﻿namespace PoE2.LogParser
 
-open System
 open System.Text.RegularExpressions
 
 open PoE2.LogParser.OutputTypes
