@@ -1,60 +1,14 @@
-﻿namespace LogParser
+﻿namespace PoE2.LogParser
 
-open System.Text.RegularExpressions
 open System
+open System.Text.RegularExpressions
+
+open PoE2.LogParser.OutputTypes
+open PoE2.LogParser.InputTypes
+open PoE2.LogParser.IntermdiateTypes
+open PoE2.LogParser.Errors
 
 module Parser =
-    //**************************************************************************************************************
-    // TYPES
-    //**************************************************************************************************************
-
-    type TimeStamp = {
-        Date : DateOnly
-        Time : TimeOnly
-    }
-
-    type LogOpen = {
-        TimeStamp : TimeStamp
-    }
-
-    type LevelUp = {
-        TimeStamp : TimeStamp
-        CharacterName : string
-        Level : int
-    }
-
-    type Death = {
-        TimeStamp : TimeStamp
-        Killed : string
-        Killer : string option
-    }
-
-    type SceneChange = {
-        TimeStamp : TimeStamp
-        SceneName : string
-    }
-
-    type LogEvent =
-        | LogOpen
-        | LevelUp
-        | Death
-        | SceneChange
-
-    type LogLine = {
-        Metadata : string
-        EventData : string
-    }
-
-    type ParserError =
-        | MissingTimestamp
-        | InvalidDate of string
-        | InvalidTime of string
-        | InvalidLogLine of string
-
-    //**************************************************************************************************************
-    // FUNCTIONS
-    //**************************************************************************************************************
-
     // Some guidelines:
     // 1. Make sure that we are examining the pattern from the start of the line using the '^' symbol. That way if 
     //    chat messages contain key patterns, the parser doesn't read the comment as a different type of log line.
@@ -83,12 +37,12 @@ module Parser =
             let splitIndex = rightBracketIndex + 2  // index of first closing square bracket -- plus 1 to include the bracket in the left result -- plus 1 more to include the following whitespace in the left result
             let left = line.Substring(0, splitIndex)
             let right = line.Substring(splitIndex)
-            Some { Metadata=left; EventData=right }
+            Some { Header=left; Message=right }
         else
             None
             
     let extractTimeStamp (line: LogLine) =
-        let m = Regex.Match(line.Metadata, dateAndTimeRegex)
+        let m = Regex.Match(line.Header, dateAndTimeRegex)
         
         if (not m.Success || m.Groups.Count < 3) then
             Error MissingTimestamp
@@ -104,7 +58,7 @@ module Parser =
             | _, false -> Error (InvalidTime timeStr)
 
     let (|Death|_|) (line: LogLine) = 
-        let m = Regex.Match(line.EventData, deathRegex)
+        let m = Regex.Match(line.Message, deathRegex)
         if (m.Success) then
             Some m.Groups[0].Value
         else
