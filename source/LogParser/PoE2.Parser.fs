@@ -11,16 +11,12 @@ module Parser =
 
     [<Literal>]
     let dateAndTimeRegex = @"^(?<date>[0-9]{4}/[0-9]{2}/[0-9]{2}) (?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
-
     [<Literal>]
     let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\." // first capture group is killed, second is killer. Second may not exist.
-
     [<Literal>]
     let sceneChangeRegex = @"^\[SCENE\] Set Source \[(?<sceneName>.+?)\]"
-
     [<Literal>]
     let levelUpRegex= @"^: (?<characterName>.+?) \((?<class>.+?)\) is now level (?<level>.+?)"
-
     [<Literal>]
     let logOpenRegex = @"^(?<open>\*\*\*\*\* LOG FILE OPENING \*\*\*\*\*)"
 
