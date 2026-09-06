@@ -23,7 +23,6 @@ module OutputTypes =
     type Death = {
         TimeStamp : TimeStamp
         Victim : string
-        Killer : string option
     }
 
     type SceneChange = {

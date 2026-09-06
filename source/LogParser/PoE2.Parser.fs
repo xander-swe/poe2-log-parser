@@ -10,9 +10,9 @@ open PoE2.LogParser.Errors
 module Parser =
 
     [<Literal>]
-    let dateAndTimeRegex = @"^(?<date>[0-9]{4}/[0-9]{2}/[0-9]{2}) (?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})" // first capture group is date, second is time
+    let dateAndTimeRegex = @"^(?<date>[0-9]{4}/[0-9]{2}/[0-9]{2}) (?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})"
     [<Literal>]
-    let deathRegex = @"^: (?<victim>.+?) has been slain(?: by (?<killer>.+?))?\." // first capture group is killed, second is killer. Second may not exist.
+    let deathRegex = @"^: (?<victim>.+?) has been slain\."
     [<Literal>]
     let sceneChangeRegex = @"^\[SCENE\] Set Source \[(?<sceneName>.+?)\]"
     [<Literal>]
@@ -24,12 +24,10 @@ module Parser =
         let m = Regex.Match(line.Message, deathRegex)
         
         let victim = GroupParser.parseGroup m.Groups["victim"] ValueParser.string
-        let killer = GroupParser.parseGroup m.Groups["killer"] ValueParser.string
 
-        match victim, killer with
-        | Some victim, Some killer -> Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=Some killer }
-        | Some victim, None -> Some { TimeStamp=line.TimeStamp; Victim=victim; Killer=None }
-        | _, _ -> None
+        match victim with
+        | Some victim -> Some { TimeStamp=line.TimeStamp; Victim=victim }
+        | None -> None
 
     let (|SceneChange|_|) (line: LogLineHeaderParsed) =
         let m = Regex.Match(line.Message, sceneChangeRegex)
