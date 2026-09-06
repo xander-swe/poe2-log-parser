@@ -7,14 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Sample.fs" />
+    <Compile Include="ParserTests.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Expecto" Version="11.*" />
-    <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.15.*" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.16.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.*" />
-    <PackageReference Update="FSharp.Core" Version="8.*" />
+    <PackageReference Update="FSharp.Core" Version="10.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LogParser\LogParser.fsproj" />
   </ItemGroup>
 </Project>
