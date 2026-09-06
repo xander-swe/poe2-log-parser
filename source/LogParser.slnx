@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="LogParser/LogParser.fsproj" />
+  <Project Path="LogParser.Tests/LogParser.Tests.fsproj" />
   <Project Path="ScriptRunner/ScriptRunner.fsproj" />
 </Solution>
